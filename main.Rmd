@@ -1,0 +1,263 @@
+---
+title: "FDA J COMP"
+author: "Satwika Sridhar"
+date: '2022-10-18'
+output: html_document
+---
+
+```{r}
+#install.packages('pracma')
+library('pracma')
+```
+
+```{r}
+df=read.csv("E:\\VIT Chennai\\Year III Sem I\\FDA Theory\\J Component\\dataset.csv")
+newdf=df
+df1=read.csv("E:\\VIT Chennai\\Year III Sem I\\FDA Theory\\J Component\\Symptom-severity.csv")
+```
+
+```{r}
+summary(df)
+#Clearly, class mode is incorrect. We need the exact symptoms as the labels
+```
+```{r}
+df=read.csv("E:\\VIT Chennai\\Year III Sem I\\FDA Theory\\J Component\\dataset.csv" ,stringsAsFactors = TRUE)
+
+```
+
+```{r}
+summary(df)
+```
+```{r}
+summary(df1)
+```
+
+```{r}
+table(is.na(df)) 
+```
+```{r}
+#however, there are empty values in the dataset which cannot be removed: Eg. some diseases may have 4 symptoms, while others may have 7. For the diseases with only 4 symptoms, the values under symptom 4,5 and 6 have to be null.
+#We need to find out what value these cells have if not null.
+
+head(df)
+```
+
+```{r}
+#empty values are found in symptom 4
+df$Symptom_4[2]
+```
+```{r}
+is.nan(df$Symptom_4[2]) #as expected-- the empty cells are not null.
+```
+```{r}
+df$Symptom_4[2]==""
+```
+```{r}
+for(i in colnames(df)){
+  df[,i]=as.character(df[[i]])
+}
+#now that we have found the value of empty cells = "", we shall replace all empty cells to null values.
+
+head(df)
+```
+
+```{r}
+df[df==""]="0"
+head(df)
+```
+
+```{r}
+df[df==df1$Symptom[1]]=df1$weight[1]
+for(j in 2:133){
+  df[df==strcat(" ",df1$Symptom[j])]=df1$weight[j]
+}
+head(df)
+```
+
+```{r}
+#as evident from the first 6 rows, "dischromic_patches" does not a 'weight' assigned to it. similarly, 'spotting_ #urination' and 'foul_smell_of urine' do not have weights (done by individually checking unique values of each column). we assign weight 0 to such anomalies.
+df[df==" dischromic _patches"]=0
+df[df==" foul_smell_of urine"]=0
+df[df==" spotting_ urination"]=0
+head(df)
+```
+
+```{r}
+#converting disease column to factor, and symptoms to numeric
+for(i in colnames(df[-1])){
+  df[,i]=as.numeric(df[,i])
+}
+df[,1]=as.factor(df[,1])
+head(df)
+```
+
+```{r}
+#splitting main data frame into one dataframe with labels and one dataframe with encoded symptoms
+dfLabels=data.frame(Disease=df[,1])
+head(dfLabels)
+
+```
+```{r}
+dfEncoded=df[,2:18]
+head(dfEncoded)
+```
+
+```{r}
+#random training testing split: 75% training, 25% testing
+smp_size <- floor(0.75 * nrow(df))
+set.seed(123)
+train_ind <- sample(seq_len(nrow(df)), size = smp_size)
+X_train <- dfEncoded[train_ind, ]
+X_test <- dfEncoded[-train_ind, ]
+y_train <- dfLabels[train_ind, ]
+y_test <- dfLabels[-train_ind, ]
+```
+
+```{r}
+unique(df$Disease)
+```
+
+
+```{r}
+#train model as disease against binary function of symptoms (s1*2^0+s2*2^1+.....)
+library("e1071")
+DF=data.frame(x=X_train,y=y_train)
+svm_model=svm(X_train,y_train)
+summary(svm_model)
+```
+```{r}
+pred=predict(svm_model,X_test)
+
+#install.packages('gmodels')
+#import required library 
+library(gmodels)
+
+#Computes the crosstable calculations
+CrossTable(head(pred),head(y_test)) #too many dimensions-- doesnt look aesthetic but the data is accurate.
+```
+
+
+```{r}
+#As a sample, let us test for vector with symptoms : 'fatigue','yellowish_skin','loss_of_appetite','yellowing_of_eyes','family_history'
+symptoms<-c('fatigue','yellowish_skin','loss_of_appetite','yellowing_of_eyes','family_history')
+symptoms_num=data.frame(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)
+#symptoms_num
+colnames(symptoms_num)=colnames(dfEncoded)
+#symptoms_num
+for(i in 1:17){
+  if(i<=length(symptoms)){
+    symptoms_num[i]=as.numeric(df1$weight[which(df1$Symptom==symptoms[i])])
+  }
+  else{
+    symptoms_num[i]=0
+  }
+}
+symptoms_num
+```
+
+```{r}
+pred_new=predict(svm_model,symptoms_num) #the predicted value for the given symptoms is Hepatitis C. We would like re-iterate here that this prediction cannot substitute an actual doctor's diagnosis. This is simply a precautionary measure'.
+pred_new
+```
+
+```{r}
+pie(table(newdf$Disease)) #41 unique diseases
+```
+```{r}
+pie(table(newdf$Symptom_1)) #most severe symptoms for diseases
+```
+```{r}
+pie(table(newdf$Symptom_2))
+```
+
+```{r}
+pie(table(newdf$Symptom_3))
+```
+
+```{r}
+pie(table(newdf$Symptom_4))
+```
+
+```{r}
+pie(table(newdf$Symptom_5))
+```
+
+```{r}
+pie(table(newdf$Symptom_6))
+```
+
+```{r}
+pie(table(newdf$Symptom_7))
+```
+
+```{r}
+pie(table(newdf$Symptom_8))
+```
+
+```{r}
+pie(table(newdf$Symptom_9))
+```
+
+```{r}
+pie(table(newdf$Symptom_10))
+```
+
+```{r}
+pie(table(newdf$Symptom_11))
+```
+
+```{r}
+pie(table(newdf$Symptom_12))
+```
+
+```{r}
+pie(table(newdf$Symptom_13))
+```
+
+```{r}
+pie(table(newdf$Symptom_14))
+```
+
+```{r}
+pie(table(newdf$Symptom_15))
+```
+
+```{r}
+pie(table(newdf$Symptom_16))
+```
+
+```{r}
+pie(table(newdf$Symptom_17))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
